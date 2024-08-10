@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import streamlit as st
+import streamlit as st  # Ensure you have this import
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -17,12 +17,17 @@ def get_answer(user_question, question_embeddings):
         else:
             return "I apologize, but I don't have information on that topic yet. Could you please ask other questions?", None
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error in get_answer: {e}")
         return "An error occurred. Please try again later.", None
 
-# Load data and embeddings
-data = pd.read_csv("qa_dataset_with_embeddings.csv")
-question_embeddings = np.array(data['Question_Embedding'].tolist())
+# Load data and embeddings (add try-except block for data loading)
+try:
+  data = pd.read_csv("qa_dataset_with_embeddings.csv")
+  question_embeddings = np.array(data['Question_Embedding'].tolist())
+except Exception as e:
+  print(f"Error loading data: {e}")
+  st.error("An error occurred loading the data. Please check your file.")
+  exit()  # Exit the app if data loading fails
 
 # Choose an embedding model
 model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -52,13 +57,17 @@ def main():
         user_question = ""
 
     if st.button("Submit"):
-        answer, similarity = get_answer(user_question, question_embeddings)
-        st.write(answer)
-        if similarity:
-            st.write(f"Similarity Score: {similarity:.2f}")
+        try:  # Wrap user question processing in a try block
+            answer, similarity = get_answer(user_question, question_embeddings)
+            st.write(answer)
+            if similarity:
+                st.write(f"Similarity Score: {similarity:.2f}")
 
-        # Add answer rating
-        rating = st.radio("How helpful was this answer?", ["Very Helpful", "Helpful", "Neutral", "Not Helpful", "Very Not Helpful"])
+            # Add answer rating
+            rating = st.radio("How helpful was this answer?", ["Very Helpful", "Helpful", "Neutral", "Not Helpful", "Very Not Helpful"])
+        except Exception as e:
+            print(f"Error in main: {e}")
+            st.error("An error occurred. Please try again later.")
 
 if __name__ == "__main__":
     main()

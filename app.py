@@ -6,10 +6,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 def get_answer(user_question, question_embeddings):
     try:
-        # Print data types for debugging
-        print(f"user_question type: {type(user_question)}")
-        print(f"question_embeddings type: {type(question_embeddings[0])}")  # Check first element type
-
         user_embedding = model.encode(user_question)
         similarities = cosine_similarity(user_embedding.reshape(1, -1), question_embeddings)
         most_similar_index = np.argmax(similarities)
@@ -23,16 +19,16 @@ def get_answer(user_question, question_embeddings):
     except Exception as e:
         print(f"Error in get_answer: {e}")
         st.error("An error occurred. Please try again later.")
-        return None  # Return None to avoid displaying generic error message
+        return None
 
-# Load data and embeddings (add try-except for data loading)
+# Load data and embeddings
 try:
     data = pd.read_csv("qa_dataset_with_embeddings.csv")
     question_embeddings = np.array(data['Question_Embedding'].tolist())
 except Exception as e:
     print(f"Error loading data: {e}")
     st.error("An error occurred loading the data. Please check your file.")
-    exit()  # Exit the app if data loading fails
+    exit()
 
 # Choose an embedding model
 model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -59,11 +55,11 @@ def main():
     # User question
     user_question = st.text_input("Ask your question:")
     if st.button("Clear"):
-        user_question = ""  # Clear the input field
+        user_question = ""
 
     if st.button("Submit"):
         answer, similarity = get_answer(user_question, question_embeddings)
-        if answer is not None:  # Check if answer is returned (not None)
+        if answer is not None:
             st.write(answer)
             if similarity:
                 st.write(f"Similarity Score: {similarity:.2f}")
@@ -73,3 +69,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

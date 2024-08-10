@@ -32,20 +32,23 @@ answer_displayed = False
 similarity_score = 0.0
 
 if search_button:
-    user_embedding = model.encode(user_question)
-    similarities = cosine_similarity([user_embedding], embeddings)[0]
-    best_index = np.argmax(similarities)
-    best_score = similarities[best_index]
-    threshold = 0.7  # Adjust this value based on testing
-
-    if best_score >= threshold:
-        answer = data.iloc[best_index]['Answer']
-        answer_displayed = True
-        similarity_score = best_score
-        st.success(f"**Answer:** {answer}")
-        st.info(f"**Similarity Score:** {similarity_score:.2f}")
+    if user_question.strip() == "":
+        st.warning("Please enter a question before searching.")
     else:
-        st.error("I apologize, but I don't have information on that topic yet. Could you please ask other questions?")
+        user_embedding = model.encode(user_question).reshape(1, -1)  # Reshape to 2D
+        similarities = cosine_similarity(user_embedding, embeddings)[0]  # Use the reshaped embedding
+        best_index = np.argmax(similarities)
+        best_score = similarities[best_index]
+        threshold = 0.7  # Adjust this value based on testing
+
+        if best_score >= threshold:
+            answer = data.iloc[best_index]['Answer']
+            answer_displayed = True
+            similarity_score = best_score
+            st.success(f"**Answer:** {answer}")
+            st.info(f"**Similarity Score:** {similarity_score:.2f}")
+        else:
+            st.error("I apologize, but I don't have information on that topic yet. Could you please ask other questions?")
 
 # Allow users to rate the answer's helpfulness
 if answer_displayed:

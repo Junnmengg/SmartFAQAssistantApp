@@ -6,6 +6,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 def get_answer(user_question, question_embeddings):
     try:
+        # Print user question for debugging
+        print(f"User question: {user_question}")
+
         user_embedding = model.encode(user_question)
         similarities = cosine_similarity(user_embedding.reshape(1, -1), question_embeddings)
         most_similar_index = np.argmax(similarities)
@@ -17,21 +20,27 @@ def get_answer(user_question, question_embeddings):
         else:
             return "I apologize, but I don't have information on that topic yet. Could you please ask other questions?", None
     except Exception as e:
-        print(f"Error: {e}")
-        return "An error occurred. Please try again later.", None
+        print(f"Error in get_answer: {e}")
+        st.error("An error occurred. Please try again later.")
+        return None  # Return None to avoid displaying generic error message
 
-# Load data and embeddings
-data = pd.read_csv("qa_dataset_with_embeddings.csv")
-question_embeddings = np.array(data['Question_Embedding'].tolist())
+# Load data and embeddings (add try-except for data loading)
+try:
+    data = pd.read_csv("qa_dataset_with_embeddings.csv")
+    question_embeddings = np.array(data['Question_Embedding'].tolist())
+except Exception as e:
+    print(f"Error loading data: {e}")
+    st.error("An error occurred loading the data. Please check your file.")
+    exit()  # Exit the app if data loading fails
 
 # Choose an embedding model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 # Sample common FAQs
 common_faqs = [
-    "What is heart disease?",
-    "What are the symptoms of lung cancer?",
-    "How can I prevent blood clots?"
+    "how to diagnose cardiomyopathy?",
+    "what causes cardiomyopathy?",
+    "what is cardiomyopathy ?"
 ]
 
 def main():
@@ -53,13 +62,15 @@ def main():
 
     if st.button("Submit"):
         answer, similarity = get_answer(user_question, question_embeddings)
-        st.write(answer)
-        if similarity:
-            st.write(f"Similarity Score: {similarity:.2f}")
+        if answer is not None:  # Check if answer is returned (not None)
+            st.write(answer)
+            if similarity:
+                st.write(f"Similarity Score: {similarity:.2f}")
 
         # Add answer rating
         rating = st.radio("How helpful was this answer?", ["Very Helpful", "Helpful", "Neutral", "Not Helpful", "Very Not Helpful"])
 
 if __name__ == "__main__":
     main()
+
 

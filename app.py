@@ -1,72 +1,59 @@
 import pandas as pd
 import numpy as np
 import streamlit as st
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+from sentence_transformers import SentenceTransformer
 
-def get_answer(user_question, question_embeddings):
-    try:
-        user_embedding = model.encode(user_question)
-        similarities = cosine_similarity(user_embedding.reshape(1, -1), question_embeddings)
-        most_similar_index = np.argmax(similarities)
-        similarity_score = similarities[0][most_similar_index]
-        threshold = 0.7
+# Load dataset and embeddings
+data = pd.read_csv('qa_dataset_with_embeddings.csv')
+data['Question_Embedding'] = data['Question_Embedding'].apply(lambda x: np.fromstring(x.strip('[]'), sep=','))
+embeddings = np.vstack(data['Question_Embedding'].values)
 
-        if similarity_score > threshold:
-            return data['Answer'][most_similar_index], similarity_score
-        else:
-            return "I apologize, but I don't have information on that topic yet. Could you please ask other questions?", None
-    except Exception as e:
-        print(f"Error in get_answer: {e}")
-        st.error("An error occurred. Please try again later.")
-        return None
-
-# Load data and embeddings
-try:
-    data = pd.read_csv("qa_dataset_with_embeddings.csv")
-    question_embeddings = np.array(data['Question_Embedding'].tolist())
-except Exception as e:
-    print(f"Error loading data: {e}")
-    st.error("An error occurred loading the data. Please check your file.")
-    exit()
-
-# Choose an embedding model
+# Load embedding model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-# Sample common FAQs
-common_faqs = [
-    "how to diagnose cardiomyopathy?",
-    "what causes cardiomyopathy?",
-    "what is cardiomyopathy ?"
-]
+# Streamlit app
+st.title('Heart, Lung, and Blood Health FAQ Assistant')
 
-def main():
-    st.title("Health FAQ Assistant")
+# Section for common FAQs
+st.sidebar.header("Common FAQs")
+common_faqs = data.sample(5)  # Display 5 random FAQs
+for idx, row in common_faqs.iterrows():
+    st.sidebar.write(f"**Q:** {row['Question']}")
+    st.sidebar.write(f"**A:** {row['Answer']}")
+    st.sidebar.write("---")
 
-    # Search bar
-    search_query = st.text_input("Search FAQs")
+# User input section
+user_question = st.text_input("Ask your question about heart, lung, or blood health:")
+search_button = st.button("Search for Answer")
 
-    # Common FAQs
-    st.header("Common FAQs")
-    for faq in common_faqs:
-        if search_query.lower() in faq.lower():
-            st.write(faq)
+# Initialize variables to store results
+answer_displayed = False
+similarity_score = 0.0
 
-    # User question
-    user_question = st.text_input("Ask your question:")
-    if st.button("Clear"):
-        user_question = ""
+if search_button:
+    user_embedding = model.encode(user_question)
+    similarities = cosine_similarity([user_embedding], embeddings)[0]
+    best_index = np.argmax(similarities)
+    best_score = similarities[best_index]
+    threshold = 0.7  # Adjust this value based on testing
 
-    if st.button("Submit"):
-        answer, similarity = get_answer(user_question, question_embeddings)
-        if answer is not None:
-            st.write(answer)
-            if similarity:
-                st.write(f"Similarity Score: {similarity:.2f}")
+    if best_score >= threshold:
+        answer = data.iloc[best_index]['Answer']
+        answer_displayed = True
+        similarity_score = best_score
+        st.success(f"**Answer:** {answer}")
+        st.info(f"**Similarity Score:** {similarity_score:.2f}")
+    else:
+        st.error("I apologize, but I don't have information on that topic yet. Could you please ask other questions?")
 
-        # Add answer rating
-        rating = st.radio("How helpful was this answer?", ["Very Helpful", "Helpful", "Neutral", "Not Helpful", "Very Not Helpful"])
+# Allow users to rate the answer's helpfulness
+if answer_displayed:
+    rating = st.radio("Was this answer helpful?", options=["Yes", "No"])
+    if rating:
+        st.write(f"Thank you for your feedback! You rated this answer as: {rating}")
 
-if __name__ == "__main__":
-    main()
+# Clear button to reset the input field
+if st.button("Clear"):
+    st.experimental_rerun()
 

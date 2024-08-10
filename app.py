@@ -35,7 +35,14 @@ if search_button:
     if user_question.strip() == "":
         st.warning("Please enter a question before searching.")
     else:
-        user_embedding = model.encode(user_question).reshape(1, -1)  # Reshape to 2D
+        # Generate the user embedding and reshape
+        user_embedding = model.encode(user_question).astype(np.float32).reshape(1, -1)
+        st.write("User embedding shape:", user_embedding.shape)  # Debugging line
+
+        # Check the shape of the dataset embeddings
+        st.write("Embeddings shape:", embeddings.shape)  # Debugging line
+
+        # Calculate cosine similarity
         similarities = cosine_similarity(user_embedding, embeddings)[0]  # Use the reshaped embedding
         best_index = np.argmax(similarities)
         best_score = similarities[best_index]

@@ -4,12 +4,26 @@ import streamlit as st
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
 
-# Load dataset and embeddings
+# Load dataset
 data = pd.read_csv('qa_dataset_with_embeddings.csv')
-data['Question_Embedding'] = data['Question_Embedding'].apply(lambda x: np.fromstring(x.strip('[]'), sep=','))
-embeddings = np.vstack(data['Question_Embedding'].values)
 
-# Load embedding model
+# Check if 'Question_Embedding' already exists
+if 'Question_Embedding' not in data.columns:
+    # Load the embedding model
+    model = SentenceTransformer('all-MiniLM-L6-v2')  # Use the same model for consistency
+
+    # Generate embeddings for all questions in the dataset
+    data['Question_Embedding'] = data['Question'].apply(lambda x: model.encode(x).tolist())
+    embeddings = np.vstack(data['Question_Embedding'].values)
+    
+    # Optionally save the embeddings back to the CSV file
+    data.to_csv('qa_dataset_with_embeddings.csv', index=False)
+else:
+    # Load the pre-calculated embeddings
+    data['Question_Embedding'] = data['Question_Embedding'].apply(lambda x: np.fromstring(x.strip('[]'), sep=','))
+    embeddings = np.vstack(data['Question_Embedding'].values)
+
+# Load the embedding model for user questions
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 # Streamlit app
@@ -38,8 +52,6 @@ if search_button:
         # Generate the user embedding and reshape
         user_embedding = model.encode(user_question).astype(np.float32).reshape(1, -1)
         st.write("User embedding shape:", user_embedding.shape)  # Debugging line
-
-        # Check the shape of the dataset embeddings
         st.write("Embeddings shape:", embeddings.shape)  # Debugging line
 
         # Calculate cosine similarity
@@ -66,4 +78,5 @@ if answer_displayed:
 # Clear button to reset the input field
 if st.button("Clear"):
     st.experimental_rerun()
+
 

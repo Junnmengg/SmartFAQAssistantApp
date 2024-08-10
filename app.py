@@ -27,16 +27,38 @@ question_embeddings = np.array(data['Question_Embedding'].tolist())
 # Choose an embedding model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
+# Sample common FAQs
+common_faqs = [
+    "What is heart disease?",
+    "What are the symptoms of lung cancer?",
+    "How can I prevent blood clots?"
+]
+
 def main():
     st.title("Health FAQ Assistant")
 
+    # Search bar
+    search_query = st.text_input("Search FAQs")
+
+    # Common FAQs
+    st.header("Common FAQs")
+    for faq in common_faqs:
+        if search_query.lower() in faq.lower():
+            st.write(faq)
+
+    # User question
     user_question = st.text_input("Ask your question:")
+    if st.button("Clear"):
+        user_question = ""
 
     if st.button("Submit"):
         answer, similarity = get_answer(user_question, question_embeddings)
         st.write(answer)
         if similarity:
             st.write(f"Similarity Score: {similarity:.2f}")
+
+        # Add answer rating
+        rating = st.radio("How helpful was this answer?", ["Very Helpful", "Helpful", "Neutral", "Not Helpful", "Very Not Helpful"])
 
 if __name__ == "__main__":
     main()

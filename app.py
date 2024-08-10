@@ -6,8 +6,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 def get_answer(user_question, question_embeddings):
     try:
-        # Print user question for debugging
-        print(f"User question: {user_question}")
+        # Print data types for debugging
+        print(f"user_question type: {type(user_question)}")
+        print(f"question_embeddings type: {type(question_embeddings[0])}")  # Check first element type
 
         user_embedding = model.encode(user_question)
         similarities = cosine_similarity(user_embedding.reshape(1, -1), question_embeddings)
